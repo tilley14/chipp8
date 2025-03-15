@@ -2,6 +2,7 @@
 
 #include <array>
 #include <bitset>
+#include <cstdint>
 #include <stdint.h>
 
 /* https://en.wikipedia.org/wiki/CHIP-8#Virtual_machine_description
@@ -14,6 +15,25 @@ namespace chipp8 {
 // 0x000 to 0x1FF
 constexpr const uint16_t FONT_START_ADDR = 0x0000u;
 constexpr const uint16_t FONT_SIZE       = 5u;
+
+constexpr const std::array<uint8_t, 5u> F_0 {0xF0u, 0x90u, 0x90u, 0x90u, 0xF0u};
+constexpr const std::array<uint8_t, 5u> F_1 {0x20u, 0x60u, 0x20u, 0x20u, 0x70u};
+constexpr const std::array<uint8_t, 5u> F_2 {0xF0u, 0x10u, 0xF0u, 0x80u, 0xF0u};
+constexpr const std::array<uint8_t, 5u> F_3 {0xF0u, 0x10u, 0xF0u, 0x10u, 0xF0u};
+constexpr const std::array<uint8_t, 5u> F_4 {0x90u, 0x90u, 0xF0u, 0x10u, 0x10u};
+constexpr const std::array<uint8_t, 5u> F_5 {0xF0u, 0x80u, 0xF0u, 0x10u, 0xF0u};
+constexpr const std::array<uint8_t, 5u> F_6 {0xF0u, 0x80u, 0xF0u, 0x90u, 0xF0u};
+constexpr const std::array<uint8_t, 5u> F_7 {0xF0u, 0x10u, 0x20u, 0x40u, 0x40u};
+constexpr const std::array<uint8_t, 5u> F_8 {0xF0u, 0x90u, 0xF0u, 0x90u, 0xF0u};
+constexpr const std::array<uint8_t, 5u> F_9 {0xF0u, 0x90u, 0xF0u, 0x10u, 0xF0u};
+constexpr const std::array<uint8_t, 5u> F_A {0xF0u, 0x90u, 0xF0u, 0x90u, 0x90u};
+constexpr const std::array<uint8_t, 5u> F_B {0xE0u, 0x90u, 0xE0u, 0x90u, 0xE0u};
+constexpr const std::array<uint8_t, 5u> F_C {0xF0u, 0x80u, 0x80u, 0x80u, 0xF0u};
+constexpr const std::array<uint8_t, 5u> F_D {0xE0u, 0x90u, 0x90u, 0x90u, 0xE0u};
+constexpr const std::array<uint8_t, 5u> F_E {0xF0u, 0x80u, 0xF0u, 0x80u, 0xF0u};
+constexpr const std::array<uint8_t, 5u> F_F {0xF0u, 0x80u, 0xF0u, 0x80u, 0x80u};
+
+
 
 struct chip8 {
     uint16_t keys;
@@ -64,7 +84,7 @@ struct chip8 {
     std::array<uint16_t, 16u> stack;
 };
 
-inline void init(chip8& cpu) {
+constexpr inline void init(chip8& cpu) {
     cpu.keys = 0u;
     cpu.pixels.reset();
     cpu.mem.fill(0u);
@@ -77,101 +97,101 @@ inline void init(chip8& cpu) {
     cpu.stack.fill(0u);
 }
 
-inline uint16_t pop_stack(chip8& cpu) {
+constexpr inline uint16_t pop_stack(chip8& cpu) {
     // Take and then decrement
     return cpu.stack[cpu.sp--];
 }
 
-inline void push_stack(chip8& cpu, uint16_t val) {
+constexpr inline void push_stack(chip8& cpu, uint16_t val) {
     // Increment then add
     cpu.stack[++cpu.sp] = val;
 }
 
-inline uint8_t rand_byte() {
+constexpr inline uint8_t rand_byte() {
     // static_assert(false, "rand_byte Not implemented yet");
     return 0x00;
 }
 
 // 00E0  - clear the screen
-inline void CLS(chip8& cpu) {
+constexpr inline void CLS(chip8& cpu) {
     cpu.pixels.reset();
 }
 
 // 00EE - return from subroutine to address pulled from stack
-inline void RET(chip8& cpu) {
+constexpr inline void RET(chip8& cpu) {
     cpu.pc = pop_stack(cpu);
 }
 
 // 0NNN - jump to native assembler subroutine at 0xNNN
-inline void SYS(chip8& cpu, uint16_t addr) {
+constexpr inline void SYS(chip8& cpu, uint16_t addr) {
     cpu.pc = addr;
 }
 
 // 1NNN - jump to address NNN
-inline void JP(chip8& cpu, uint16_t addr) {
+constexpr inline void JP(chip8& cpu, uint16_t addr) {
     cpu.pc = addr;
 }
 
 // 2NNN - push return address onto stack and call subroutine at address NNN
-inline void CALL(chip8& cpu, uint16_t addr) {
+constexpr inline void CALL(chip8& cpu, uint16_t addr) {
     push_stack(cpu, cpu.pc);
     cpu.pc = addr;
 }
 
 // 3XNN - skip next opcode if vX == NN
-inline void SE(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
+constexpr inline void SE(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
     if (cpu.v[x] == nn) {
         cpu.pc += 2;
     }
 }
 
 // 4XNN - skip next opcode if vX != NN
-inline void SNE(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
+constexpr inline void SNE(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
     if (cpu.v[x] != nn) {
         cpu.pc += 2u;
     }
 }
 
 // 5XY0 - skip next opcode if vX == vY
-inline void SE_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
+constexpr inline void SE_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
     if (cpu.v[x] == cpu.v[y]) {
         cpu.pc += 2u;
     }
 }
 
 // 6XNN - set vX to NN
-inline void LD(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
+constexpr inline void LD(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
     cpu.v[x] = nn;
 }
 
 // 7XNN - add NN to vX
 // NOTE: The carry flag is not changed
-inline void ADD(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
+constexpr inline void ADD(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
     cpu.v[x] += nn;
 }
 
 // 8XY0 - set vX to the value of vY
-inline void LD_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
+constexpr inline void LD_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
     cpu.v[x] = cpu.v[y];
 }
 
 // 8XY1 - set vX to the result of bitwise vX OR vY
-inline void OR_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
+constexpr inline void OR_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
     cpu.v[x] = (cpu.v[x] | cpu.v[y]);
 }
 
 // 8XY2 - set vX to the result of bitwise vX AND vY
-inline void AND_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
+constexpr inline void AND_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
     cpu.v[x] = (cpu.v[x] & cpu.v[y]);
 }
 
 // 8XY3 - set vX to the result of bitwise vX XOR vY
-inline void XOR_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
+constexpr inline void XOR_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
     cpu.v[x] = (cpu.v[x] ^ cpu.v[y]);
 }
 
 // 8XY4 - add vY to vX, vF is set to 1 if an overflow happened, to 0 if not, even if X=F!
-inline void ADD_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
+constexpr inline void ADD_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
     uint16_t sum = cpu.v[x] + cpu.v[y];
     if (sum > 255u) {
         cpu.v[0xFu] = 1u;
@@ -192,13 +212,13 @@ inline void SUB_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
 }
 
 // 8XY6 - If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
-inline void SHR(chip8& cpu, uint8_t /*V*/x) {
+constexpr inline void SHR(chip8& cpu, uint8_t /*V*/x) {
     cpu.v[0xFu] = cpu.v[x] & 0x01u;
     cpu.v[x] >>= 1u;
 }
 
 // 8XY7 - set vX to the result of subtracting vX from vY, vF is set to 0 if an underflow happened, to 1 if not, even if X=F!
-inline void SUBN_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
+constexpr inline void SUBN_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
     if (cpu.v[y] > cpu.v[x]) {
         cpu.v[0xFu] = 1u;
     } else {
@@ -208,30 +228,30 @@ inline void SUBN_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
 }
 
 // 8XYE - set vX to vY and shift vX one bit to the left, set vF to the bit shifted out, even if X=F!
-inline void SHL(chip8& cpu, uint8_t /*V*/x) {
+constexpr inline void SHL(chip8& cpu, uint8_t /*V*/x) {
     cpu.v[0xFu] = cpu.v[x] & 0x80u;
     cpu.v[x] <<= 1u;
 }
 
 // 9XY0 - skip next opcode if vX != vY
-inline void SNE_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
+constexpr inline void SNE_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
     if (cpu.v[x] != cpu.v[y]) {
         cpu.pc += 2u;
     }
 }
 
 // ANNN - set I to NNN
-inline void LD_I(chip8& cpu, uint16_t addr) {
+constexpr inline void LD_I(chip8& cpu, uint16_t addr) {
     cpu.i = addr;
 }
 
 // BNNN - jump to address NNN + v0
-inline void JP_V0(chip8& cpu, uint16_t nnn) {
+constexpr inline void JP_V0(chip8& cpu, uint16_t nnn) {
     cpu.pc = cpu.v[0x0u] + nnn;
 }
 
 // CXNN - set vx to a random value masked (bitwise AND) (Typically: 0 to 255) with NN
-inline void RND(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
+constexpr inline void RND(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
     cpu.v[x] = rand_byte() & nn;
 }
 
@@ -242,7 +262,7 @@ inline void RND(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
 // memory location I; I value does not change after the execution of this instruction.
 // As described above, VF is set to 1 if any screen pixels are flipped from
 // set to unset when the sprite is drawn, and to 0 if that does not happen.
-inline void DRW(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y, uint8_t n) {
+constexpr inline void DRW(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y, uint8_t n) {
     auto *p = &cpu.mem[cpu.i];
     auto *end = p + n;
     for ( ; p != end; ++p) {
@@ -253,26 +273,26 @@ inline void DRW(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y, uint8_t n) {
 }
 
 // EX9E - Skip next instruction if key with the value of Vx is pressed.
-inline void SKP(chip8& cpu, uint8_t /*V*/x) {
+constexpr inline void SKP(chip8& cpu, uint8_t /*V*/x) {
     if (cpu.keys & (1u << cpu.v[x])) {
         cpu.pc += 2u;
     }
 }
 
 // EXA1 - Skip next instruction if key with the value of Vx is not pressed.
-inline void SKNP(chip8& cpu, uint8_t /*V*/x) {
+constexpr inline void SKNP(chip8& cpu, uint8_t /*V*/x) {
     if (!(cpu.keys & (1u << cpu.v[x]))) {
         cpu.pc += 2u;
     }
 }
 
 // FX07 - set vX to the value of the delay timer
-inline void LD_REG_DT(chip8& cpu, uint8_t /*V*/x) {
+constexpr inline void LD_REG_DT(chip8& cpu, uint8_t /*V*/x) {
     cpu.v[x] = cpu.d_timer;
 }
 
 // FX0A - Wait for a key press, store the value of the key in Vx
-inline void WAIT_KP(chip8& cpu, uint8_t /*V*/x) {
+constexpr inline void WAIT_KP(chip8& cpu, uint8_t /*V*/x) {
     if (cpu.keys & 0xFFFF) {
         cpu.v[x] = cpu.keys;
     } else {
@@ -283,26 +303,57 @@ inline void WAIT_KP(chip8& cpu, uint8_t /*V*/x) {
 }
 
 // FX15 - set delay timer to vX
-inline void LD_DT_REG(chip8& cpu, uint8_t /*V*/x) {
+constexpr inline void LD_DT_REG(chip8& cpu, uint8_t /*V*/x) {
     cpu.d_timer = cpu.v[x];
 }
 
 // FX18 - set sound timer to vX, sound is played as long as the sound timer reaches zero
-inline void LD_ST_REG(chip8& cpu, uint8_t /*V*/x) {
+constexpr inline void LD_ST_REG(chip8& cpu, uint8_t /*V*/x) {
     cpu.s_timer = cpu.v[x];
 }
 
 // FX1E - add vX to I
-inline void ADD_I_REG(chip8& cpu, uint8_t /*V*/x) {
+constexpr inline void ADD_I_REG(chip8& cpu, uint8_t /*V*/x) {
     cpu.i += cpu.v[x];
 }
 
 // FX29 - Set I = location of sprite for digit Vx
-inline void LD_FONT(chip8& cpu, uint8_t /*V*/x) {
+constexpr inline void LD_FONT(chip8& cpu, uint8_t /*V*/x) {
     cpu.i = FONT_START_ADDR + (FONT_SIZE * cpu.v[x]);
 }
 
-bool parse_op(chip8& cpu, uint16_t instruct) {
+// FX33 - Store BCD representation of Vx in memory locations I, I+1, and I+2. (hundreds, tens, ones)
+constexpr inline void LD_BCD(chip8& cpu, uint8_t /*V*/x) {
+    auto val = cpu.v[x];
+
+    // Ones
+    cpu.mem[cpu.i + 2u] = val % 10u;
+    val /= 10u;
+
+    // Tens
+    cpu.mem[cpu.i + 1u] = val % 10u;
+    val /= 10u;
+
+    // Hundreds
+    cpu.mem[cpu.i] = val % 10u;
+}
+
+// FX55 - Store registers V0 through Vx in memory starting at location I.
+constexpr inline void LD_I_V0X(chip8& cpu, uint8_t /*V*/x) {
+    for (auto i = 0u; i <= x; ++i) {
+        cpu.mem[cpu.i + i] = cpu.v[i];
+    }
+}
+
+// FX65- Read registers V0 through Vx from memory starting at location I.
+constexpr inline void LD_V0X_I(chip8& cpu, uint8_t /*V*/x) {
+    for (auto i = 0u; i <= x; ++i) {
+        cpu.v[i] = cpu.mem[cpu.i + i];
+    }
+}
+
+
+constexpr bool parse_op(chip8& cpu, uint16_t instruct) {
     switch (instruct & 0xF000u) {
         case 0x0000u: {
             switch (instruct & 0x0FFFu) {
@@ -478,18 +529,17 @@ bool parse_op(chip8& cpu, uint16_t instruct) {
                 } break;
 
                 case 0x0033u: {
-                    // FX33 - write the value of vX as BCD value at the addresses I, I+1 and I+2
+                    LD_BCD(cpu, static_cast<uint8_t>((instruct & 0x0F00u) >> 8u));
                 } break;
 
                 case 0x0055u: {
-                    // FX55 - write the content of v0 to vX at the memory pointed to by I, I is incremented by X+1
+                    LD_I_V0X(cpu, static_cast<uint8_t>((instruct & 0x0F00u) >> 8u));
                 } break;
 
                 case 0x0065u: {
-                    // FX65- read the bytes from memory pointed to by I into the registers v0 to vX, I is incremented by X+1
+                    LD_V0X_I(cpu, static_cast<uint8_t>((instruct & 0x0F00u) >> 8u));
                 } break;
             }
-
         } break;
 
         default: {
