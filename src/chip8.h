@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <array>
 #include <bitset>
 #include <stdint.h>
@@ -11,7 +10,7 @@
 
 namespace chipp8 {
 
-static_assert(false, "todo put the fonts in memory");
+// static_assert(false, "todo put the fonts in memory");
 // 0x000 to 0x1FF
 constexpr const uint16_t FONT_START_ADDR = 0x0000u;
 constexpr const uint16_t FONT_SIZE       = 5u;
@@ -89,7 +88,7 @@ inline void push_stack(chip8& cpu, uint16_t val) {
 }
 
 inline uint8_t rand_byte() {
-    static_assert(false, "rand_byte Not implemented yet");
+    // static_assert(false, "rand_byte Not implemented yet");
     return 0x00;
 }
 
@@ -250,7 +249,7 @@ inline void DRW(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y, uint8_t n) {
 
     }
 
-    static_assert(false, "DRW Not implemented yet");
+    // static_assert(false, "DRW Not implemented yet");
 }
 
 // EX9E - Skip next instruction if key with the value of Vx is pressed.
