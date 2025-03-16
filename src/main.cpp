@@ -1,15 +1,16 @@
 #include "chip8.h"
-
 #include "utils.h"
 
 int main(int argc, char* argv[]) {
     using namespace chipp8;
     chip8 cpu;
     init(cpu);
+    load_font_sprites(cpu);
+    cpu.i = FONT_START_ADDR + 5*0;
+    cpu.v[1] = 8;
+    cpu.v[2] = 8;
 
-    for (const auto &a : {F_0, F_1, F_2, F_3, F_4, F_5, F_6, F_7, F_8, F_9, F_A, F_B, F_C, F_D, F_E, F_F})
-        utils::pp_array(a);
-
+    DRW(cpu, 1, 2, 5);
     utils::pp_display(cpu.pixels, 64u, 32u);
 
     // What is the clock rate?

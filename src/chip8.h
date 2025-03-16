@@ -1,9 +1,14 @@
 #pragma once
 
 #include <array>
+#include <bit>
 #include <bitset>
 #include <cstdint>
 #include <stdint.h>
+#include <string>
+#include <iostream>
+
+#include "sprites.h"
 
 /* https://en.wikipedia.org/wiki/CHIP-8#Virtual_machine_description
    https://chip8.gulrak.net/
@@ -11,30 +16,15 @@
 
 namespace chipp8 {
 
-// static_assert(false, "todo put the fonts in memory");
 // 0x000 to 0x1FF
-constexpr const uint16_t FONT_START_ADDR = 0x0000u;
-constexpr const uint16_t FONT_SIZE       = 5u;
+constexpr const uint16_t FONT_START_ADDR = 0x050u;
+constexpr const uint16_t PROGRAM_START_ADDR = 0x0200u;
+constexpr const uint16_t ETI_660_PROGRAM_START_ADDR = 0x0600u;
 
-constexpr const std::array<uint8_t, 5u> F_0 {0xF0u, 0x90u, 0x90u, 0x90u, 0xF0u};
-constexpr const std::array<uint8_t, 5u> F_1 {0x20u, 0x60u, 0x20u, 0x20u, 0x70u};
-constexpr const std::array<uint8_t, 5u> F_2 {0xF0u, 0x10u, 0xF0u, 0x80u, 0xF0u};
-constexpr const std::array<uint8_t, 5u> F_3 {0xF0u, 0x10u, 0xF0u, 0x10u, 0xF0u};
-constexpr const std::array<uint8_t, 5u> F_4 {0x90u, 0x90u, 0xF0u, 0x10u, 0x10u};
-constexpr const std::array<uint8_t, 5u> F_5 {0xF0u, 0x80u, 0xF0u, 0x10u, 0xF0u};
-constexpr const std::array<uint8_t, 5u> F_6 {0xF0u, 0x80u, 0xF0u, 0x90u, 0xF0u};
-constexpr const std::array<uint8_t, 5u> F_7 {0xF0u, 0x10u, 0x20u, 0x40u, 0x40u};
-constexpr const std::array<uint8_t, 5u> F_8 {0xF0u, 0x90u, 0xF0u, 0x90u, 0xF0u};
-constexpr const std::array<uint8_t, 5u> F_9 {0xF0u, 0x90u, 0xF0u, 0x10u, 0xF0u};
-constexpr const std::array<uint8_t, 5u> F_A {0xF0u, 0x90u, 0xF0u, 0x90u, 0x90u};
-constexpr const std::array<uint8_t, 5u> F_B {0xE0u, 0x90u, 0xE0u, 0x90u, 0xE0u};
-constexpr const std::array<uint8_t, 5u> F_C {0xF0u, 0x80u, 0x80u, 0x80u, 0xF0u};
-constexpr const std::array<uint8_t, 5u> F_D {0xE0u, 0x90u, 0x90u, 0x90u, 0xE0u};
-constexpr const std::array<uint8_t, 5u> F_E {0xF0u, 0x80u, 0xF0u, 0x80u, 0xF0u};
-constexpr const std::array<uint8_t, 5u> F_F {0xF0u, 0x80u, 0xF0u, 0x80u, 0x80u};
-
-
-
+// Memory MAP
+// 0x000-0x1FF - Chip 8 interpreter (contains font set in emu)
+// 0x050-0x0A0 - Used for the built in 4x5 pixel font set (0-F)
+// 0x200-0xFFF - Program ROM and work RAM
 struct chip8 {
     uint16_t keys;
 
@@ -95,6 +85,17 @@ constexpr inline void init(chip8& cpu) {
     cpu.pc = 0u;
     cpu.sp = 0u;
     cpu.stack.fill(0u);
+}
+
+constexpr inline void load_font_sprites(chip8& cpu) {
+    constexpr auto sprite_list = sprites::all_font_sprites();
+    auto i = 0u;
+    for (const auto& sprite: sprite_list) {
+        for (const auto& byte: sprite) {
+            cpu.mem[FONT_START_ADDR + i] = byte;
+            ++i;
+        }
+    }
 }
 
 constexpr inline uint16_t pop_stack(chip8& cpu) {
@@ -202,7 +203,7 @@ constexpr inline void ADD_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
 }
 
 // 8XY5 - subtract vY from vX, vF is set to 0 if an underflow happened, to 1 if not, even if X=F!
-inline void SUB_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
+constexpr inline void SUB_REG(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y) {
     if (cpu.v[x] > cpu.v[y]) {
         cpu.v[0xFu] = 1u;
     } else {
@@ -263,13 +264,30 @@ constexpr inline void RND(chip8& cpu, uint8_t /*V*/x, uint8_t nn) {
 // As described above, VF is set to 1 if any screen pixels are flipped from
 // set to unset when the sprite is drawn, and to 0 if that does not happen.
 constexpr inline void DRW(chip8& cpu, uint8_t /*V*/x, uint8_t /*V*/y, uint8_t n) {
-    auto *p = &cpu.mem[cpu.i];
-    auto *end = p + n;
-    for ( ; p != end; ++p) {
+    auto start_x = cpu.v[x];
+    auto start_y = cpu.v[y];
+    cpu.v[0xFu] = 0u;
 
+    constexpr auto bit_width = sizeof(decltype(cpu.mem[0])) * 8u;
+    std::bitset<bit_width> buf;
+    for (auto i = 0u; i < n; ++i) {
+        // const auto buf = cpu.mem[cpu.i + i];
+        buf = cpu.mem[cpu.i + i];
+        const auto idx_y = (start_y + i);
+        const auto draw_y = (idx_y % 32u); // Wrap y
+        for (auto j = 0; j < bit_width; ++j) {
+            const auto idx_x = (start_x + j);
+            const auto draw_x = (idx_x % 64u); // Wrap x
+            // const bool sprite_pixel_active = static_cast<bool>((buf & (1u << (bit_width - j - 1u))));
+            const bool sprite_pixel_active = buf[bit_width - j - 1u];
+            const auto draw_index = draw_x + (draw_y * 64u);
+            // Collision!
+            if (sprite_pixel_active && cpu.pixels[draw_index]) {
+                cpu.v[0xFu] = 1u;
+            }
+            cpu.pixels[draw_index] = (cpu.pixels[draw_index] != sprite_pixel_active);
+        }
     }
-
-    // static_assert(false, "DRW Not implemented yet");
 }
 
 // EX9E - Skip next instruction if key with the value of Vx is pressed.
@@ -319,7 +337,7 @@ constexpr inline void ADD_I_REG(chip8& cpu, uint8_t /*V*/x) {
 
 // FX29 - Set I = location of sprite for digit Vx
 constexpr inline void LD_FONT(chip8& cpu, uint8_t /*V*/x) {
-    cpu.i = FONT_START_ADDR + (FONT_SIZE * cpu.v[x]);
+    cpu.i = FONT_START_ADDR + (sprites::FONT_SIZE * cpu.v[x]);
 }
 
 // FX33 - Store BCD representation of Vx in memory locations I, I+1, and I+2. (hundreds, tens, ones)
