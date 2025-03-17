@@ -1,12 +1,8 @@
 #pragma once
 
 #include <array>
-#include <bit>
 #include <bitset>
-#include <cstdint>
 #include <stdint.h>
-#include <string>
-#include <iostream>
 
 #include "sprites.h"
 

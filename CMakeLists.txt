@@ -10,3 +10,5 @@ project(chip8)
 add_executable(chip8
   src/main.cpp
 )
+
+add_subdirectory(test)
