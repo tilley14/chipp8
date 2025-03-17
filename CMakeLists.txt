@@ -4,11 +4,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+project(chipp8)
 
-project(chip8)
-
-add_executable(chip8
-  src/main.cpp
-)
-
+add_subdirectory(lib)
 add_subdirectory(test)
+add_subdirectory(app)

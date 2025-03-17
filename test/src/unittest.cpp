@@ -1,9 +1,8 @@
 #include "unittest.h"
 
 #include <cassert>
-#include <iostream>
 
-#include "../src/chip8.h"
+#include "chip8.h"
 
 #define ASSERT(condition, message) \
    do { \

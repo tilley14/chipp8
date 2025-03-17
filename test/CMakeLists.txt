@@ -9,5 +9,5 @@ add_executable(test
 
 target_include_directories(test
 PRIVATE
-  ../src
+  ../lib/chip8/include
 )
